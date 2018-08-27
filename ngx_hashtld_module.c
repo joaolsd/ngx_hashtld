@@ -2,8 +2,10 @@
 #include <ngx_http.h>
 #include <ngx_http_variables.h>
 
-char *test_domains[];
+char *test_domains;
 int num_domains;
+
+ngx_conf_t *my_cf
 
 int djb2_hash(char *str, int num_buckets);
 
@@ -28,14 +30,14 @@ ngx_hashgtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
     ngx_int_t txad_idx;
 
     ngx_http_variable_value_t *txrnd_val;
-    ngx_http_variable_value_t *ccid_val;
+    ngx_http_variable_value_t *txccid_val;
     ngx_http_variable_value_t *txsec_val;
     ngx_http_variable_value_t *txad_val;
 
-    txrnd_idx = ngx_http_get_variable_index(cf, "txrnd");
-    txccid_idx = ngx_http_get_variable_index(cf, "ccid");
-    txsec_idx = ngx_http_get_variable_index(cf, "txsec");
-    txad_idx = ngx_http_get_variable_index(cf, "txad");
+    txrnd_idx = ngx_http_get_variable_index(my_cf, "txrnd");
+    txccid_idx = ngx_http_get_variable_index(my_cf, "ccid");
+    txsec_idx = ngx_http_get_variable_index(my_cf, "txsec");
+    txad_idx = ngx_http_get_variable_index(my_cf, "txad");
     
     txrnd_val = ngx_http_get_indexed_variable(r, txrnd_idx);
     txccid_val = ngx_http_get_indexed_variable(r, ccid_idx);
@@ -67,7 +69,7 @@ ngx_hashgtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
     }
 
     v->len = strlen(new_domain);
-    v->data = new_domain;
+    v->data = (u_char *)new_domain;
 
     v->valid = 1;
     v->not_found = 0;
@@ -95,8 +97,6 @@ int read_test_domains(char *domain_list, ngx_cycle_t *cycle) {
   	if (f_dl == NULL) {
       ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
                     "Could not read domain list %s", domain_list);
-      v->valid = 0;
-      v->not_found = 1;
       return NGX_ERROR;
   	}
   	// Read the domain list
@@ -117,8 +117,8 @@ int read_test_domains(char *domain_list, ngx_cycle_t *cycle) {
 
 static ngx_int_t
 ngx_hashgtld_init_process(ngx_cycle_t *cycle) {
-  // Load list of gTLDs from file
-  char *domain_list = "/usr/local/dns/domain_list.txt"
+    // Load list of gTLDs from file
+    char *domain_list = "/usr/local/dns/domain_list.txt";
     num_domains = read_test_domains(domain_list, cycle);
     if (num_domains == NGX_ERROR) {
       return NGX_ERROR;
@@ -136,6 +136,7 @@ static ngx_str_t ngx_hashgtld_variable_name = ngx_string("hashgtld");
 
 static ngx_int_t ngx_hashgtld_add_variables(ngx_conf_t *cf)
 {
+  my_cf = cf;
   ngx_http_variable_t* var = ngx_http_add_variable(
           cf,
           &ngx_hashgtld_variable_name,
