@@ -1,4 +1,4 @@
-nginx=nginx-1.3.7
+nginx=nginx-1.12.2
 nginx_url=http://nginx.org/download/$(nginx).tar.gz
 
 libfaketime=libfaketime-0.9.6
