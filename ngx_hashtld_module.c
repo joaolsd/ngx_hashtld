@@ -7,13 +7,13 @@ int num_domains;
 
 int djb2_hash(char *str, int num_buckets);
 
-
 static ngx_int_t
 ngx_hashgtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
         uintptr_t data) {
           
     char *exp_str;
     int tld_index;
+    char *new_domain;
 
     // The ICANN gTLD experiment uses a string of the form:
     // 6du-u$txrnd-c$ccid-s$txsec-i$txad-0.$cc2.dashnxdomain.net
@@ -51,7 +51,7 @@ ngx_hashgtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
     exp_str = strcat(exp_str, "-s");
     exp_str = strncat(exp_str, (char *)txsec_val->data, txsec_val->len);
     exp_str = strcat(exp_str, "-i");
-    exp_str = strncat(exp_str, (char *)txad_sec->data, txad_val->len);
+    exp_str = strncat(exp_str, (char *)txad_val->data, txad_val->len);
     exp_str = strcat(exp_str, "-0");
 
     // Hash the experiment string
@@ -88,12 +88,12 @@ int djb2_hash(char *str, int num_buckets) {
 	return (int)(hash % num_buckets);
 }
 
-int read_test_domains(char *domain_list) {
+int read_test_domains(char *domain_list, ngx_cycle_t *cycle) {
   // If there is a domain list to load, load it
   if (strlen(domain_list) !=0 ) {
   	FILE *f_dl = fopen(domain_list, "r");
   	if (f_dl == NULL) {
-      ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+      ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
                     "Could not read domain list %s", domain_list);
       v->valid = 0;
       v->not_found = 1;
@@ -118,8 +118,8 @@ int read_test_domains(char *domain_list) {
 static ngx_int_t
 ngx_hashgtld_init_process(ngx_cycle_t *cycle) {
   // Load list of gTLDs from file
-  char domain_list = "/usr/local/dns/domain_list.txt"
-    num_domains = read_test_domains(domain_list);
+  char *domain_list = "/usr/local/dns/domain_list.txt"
+    num_domains = read_test_domains(domain_list, cycle);
     if (num_domains == NGX_ERROR) {
       return NGX_ERROR;
     } else {
