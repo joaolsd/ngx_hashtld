@@ -2,6 +2,12 @@
 #include <ngx_http.h>
 #include <ngx_http_variables.h>
 
+char *test_domains[];
+int num_domains;
+
+int djb2_hash(char *str, int num_buckets);
+
+
 static ngx_int_t
 ngx_hashgtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
         uintptr_t data) {
@@ -26,26 +32,26 @@ ngx_hashgtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
     ngx_http_variable_value_t *txsec_val;
     ngx_http_variable_value_t *txad_val;
 
-    txrnd_idx = ngx_http_get_variable_index(ngx_conf_t *cf, "txrnd");
-    ccid_idx = ngx_http_get_variable_index(ngx_conf_t *cf, "ccid");
-    txsec_idx = ngx_http_get_variable_index(ngx_conf_t *cf, "txsec");
-    txad_idx = ngx_http_get_variable_index(ngx_conf_t *cf, "txad");
+    txrnd_idx = ngx_http_get_variable_index(cf, "txrnd");
+    txccid_idx = ngx_http_get_variable_index(cf, "ccid");
+    txsec_idx = ngx_http_get_variable_index(cf, "txsec");
+    txad_idx = ngx_http_get_variable_index(cf, "txad");
     
     txrnd_val = ngx_http_get_indexed_variable(r, txrnd_idx);
-    ccid_val = ngx_http_get_indexed_variable(r, ccid_idx);
+    txccid_val = ngx_http_get_indexed_variable(r, ccid_idx);
     txsec_val = ngx_http_get_indexed_variable(r, txsec_idx);
     txad_val = ngx_http_get_indexed_variable(r, txad_idx);
     
     exp_str = calloc(64, sizeof(char));
     // build experiment string from variable values
     exp_str = strcpy(exp_str, "6du-u");
-    exp_str = strncat(exp_str, txrnd_val->data, txrnd_val->len);
+    exp_str = strncat(exp_str, (char *)txrnd_val->data, txrnd_val->len);
     exp_str = strcat(exp_str, "-c");
-    exp_str = strncat(exp_str, txccid_val->data, txccid_val->len);
+    exp_str = strncat(exp_str, (char *)txccid_val->data, txccid_val->len);
     exp_str = strcat(exp_str, "-s");
-    exp_str = strncat(exp_str, txsec_val->data, txsec_val->len);
+    exp_str = strncat(exp_str, (char *)txsec_val->data, txsec_val->len);
     exp_str = strcat(exp_str, "-i");
-    exp_str = strncat(exp_str, txad_sec->data, txad_val->len);
+    exp_str = strncat(exp_str, (char *)txad_sec->data, txad_val->len);
     exp_str = strcat(exp_str, "-0");
 
     // Hash the experiment string
@@ -81,9 +87,6 @@ int djb2_hash(char *str, int num_buckets) {
 	}
 	return (int)(hash % num_buckets);
 }
-
-char *test_domains[];
-int num_domains;
 
 int read_test_domains(char *domain_list) {
   // If there is a domain list to load, load it
