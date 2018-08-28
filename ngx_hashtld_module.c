@@ -40,6 +40,9 @@ ngx_hashtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
     ngx_str_t str_txsec;
     ngx_str_t str_txad;
     
+    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "Start hashtld invocation");
+
     str_txrnd.data = (u_char *)"txrnd";
     str_txrnd.len = strlen((const char *)str_txrnd.data);
     str_ccid.data = (u_char *)"ccid";
@@ -49,17 +52,31 @@ ngx_hashtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
     str_txad.data = (u_char *)"txad";
     str_txad.len = strlen((const char *)str_txad.data);
 
+    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "Variable names are set");
+
     txrnd_idx = ngx_http_get_variable_index(my_cf, &str_txrnd);
     ccid_idx = ngx_http_get_variable_index(my_cf, &str_ccid);
     txsec_idx = ngx_http_get_variable_index(my_cf, &str_txsec);
     txad_idx = ngx_http_get_variable_index(my_cf, &str_txad);
     
+    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "Got variable indices");
+    
     txrnd_val = ngx_http_get_indexed_variable(r, txrnd_idx);
     ccid_val = ngx_http_get_indexed_variable(r, ccid_idx);
     txsec_val = ngx_http_get_indexed_variable(r, txsec_idx);
     txad_val = ngx_http_get_indexed_variable(r, txad_idx);
-    
+
+    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "Got variable values");
+
     exp_str = calloc(64, sizeof(char));
+    
+    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "Building experiment string");
+
+    
     // build experiment string from variable values
     exp_str = strcpy(exp_str, "6du-u");
     exp_str = strncat(exp_str, (char *)txrnd_val->data, txrnd_val->len);
@@ -70,6 +87,9 @@ ngx_hashtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
     exp_str = strcat(exp_str, "-i");
     exp_str = strncat(exp_str, (char *)txad_val->data, txad_val->len);
     exp_str = strcat(exp_str, "-0");
+    
+    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                "Experiment string: %s", exp_str);
 
     // Hash the experiment string
     tld_index = djb2_hash(exp_str, num_domains);
@@ -83,7 +103,7 @@ ngx_hashtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
     v->not_found = 0;
     v->no_cacheable = 0;
     
-    ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
+    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                 "Converted experiment %s into domain %s", exp_str, new_domain);
 
     return NGX_OK;
@@ -105,7 +125,7 @@ int read_test_domains(char *domain_list, ngx_cycle_t *cycle) {
     f_dl = fopen(domain_list, "r");
     if (f_dl == NULL) {
       ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
-                    "Could not read domain list %s", domain_list);
+                    "Could not open domain list %s", domain_list);
       return NGX_ERROR;
     }
   } else {
@@ -130,6 +150,9 @@ int read_test_domains(char *domain_list, ngx_cycle_t *cycle) {
   // for (int i=0; i<num_domains;i++) {
   // 	printf("%s\n",test_domains[i]);
   // }
+  ngx_log_error(NGX_LOG_ERR, cycle->log, 0,
+                "Read %d domains from domain list", num_domains);
+  
   return num_domains;
 }
 
