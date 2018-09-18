@@ -17,6 +17,7 @@ ngx_hashtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
     char *exp_str;
     int tld_index;
     char *new_domain;
+    char *ret_domain;
 
     // The ICANN gTLD experiment uses a string of the form:
     // 6du-u$txrnd-c$ccid-s$txsec-i$txad-0.$cc2.dashnxdomain.net
@@ -39,9 +40,14 @@ ngx_hashtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
     tld_index = djb2_hash(exp_str, num_domains);
     // Use the hash to look up the gTLD to issue
     new_domain = test_domains[tld_index];
+    ret_domain = malloc(256);
+    strcpy(ret_domain,exp_str);
+    strcat(ret_domain,"1.");
+    strcat(ret_domain,new_domain) ;
+    
 
-    v->len = strlen(new_domain);
-    v->data = (u_char *)new_domain;
+    v->len = strlen(ret_domain);
+    v->data = (u_char *)ret_domain;
 
     v->valid = 1;
     v->not_found = 0;
@@ -50,6 +56,7 @@ ngx_hashtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
     // ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
     //             "Converted experiment %s into domain %s", exp_str, new_domain);
     free(exp_str);
+    free(ret_domain);
     return NGX_OK;
 }
 
