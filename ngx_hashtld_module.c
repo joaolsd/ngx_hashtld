@@ -37,7 +37,9 @@ ngx_hashtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
     *label_end = '\0';
 
     // Hash the experiment string
-    tld_index = djb2_hash(exp_str, num_domains);
+// Disable in this branch. Selecting the domains randomly
+//    tld_index = djb2_hash(exp_str, num_domains);
+    tld_index = ( rand() % (num_domains) );
     // Use the hash to look up the gTLD to issue
     new_domain = test_domains[tld_index];
     ret_domain = malloc(256);
@@ -110,6 +112,7 @@ int read_test_domains(char *domain_list, ngx_cycle_t *cycle) {
 
 static ngx_int_t
 ngx_hashtld_init_process(ngx_cycle_t *cycle) {
+    srand(time(0)); // Seed the random generator
     // Load list of gTLDs from file
     char *domain_list = "/usr/local/dns/domain_list.txt";
     num_domains = read_test_domains(domain_list, cycle);
