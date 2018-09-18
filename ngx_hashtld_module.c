@@ -6,69 +6,30 @@
 char *test_domains[MAX_DOMAINS];
 int num_domains;
 
-ngx_conf_t *my_cf;
-
 int djb2_hash(char *str, int num_buckets);
 
 static ngx_int_t
 ngx_hashtld_get(ngx_http_request_t *r, ngx_http_variable_value_t *v, \
         uintptr_t data) {
           
-    char *exp_str;
     int tld_index;
     char *new_domain;
-    char *ret_domain;
 
-    // The ICANN gTLD experiment uses a string of the form:
-    // 6du-u$txrnd-c$ccid-s$txsec-i$txad-0.$cc2.dashnxdomain.net
-    // 6du-ud77a895f-c68-s1535366734-i4f9b6b77-0.eu2.dashnxdomain.net
-    // so this module needs to be the last to get executed
-
-    exp_str = calloc(255, sizeof(char));
-    
-    // build experiment string from variable values
-    strncpy(exp_str, (char *)r->headers_in.server.data, r->headers_in.server.len);
-    
-    // ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-    //             "Full server name: %s", exp_str);
-    //
-    // Keep only the first label from the server name (exp_str)
-    char *label_end = strchr(exp_str,'.');
-    *label_end = '\0';
-
-    // Hash the experiment string
-// Disable in this branch. Selecting the domains randomly
-//    tld_index = djb2_hash(exp_str, num_domains);
+    // The ICANN gTLD experiment direct-to-TLD approach uses random-picked TLDs
+    // to put them in the config (newadcfg)
     tld_index = ( rand() % (num_domains) );
-    // Use the hash to look up the gTLD to issue
-    new_domain = test_domains[tld_index];
-    ret_domain = malloc(256);
-    strcpy(ret_domain,exp_str);
-    strcat(ret_domain,"1.");
-    strcat(ret_domain,new_domain) ;
-    
 
-    v->len = strlen(ret_domain);
-    v->data = (u_char *)ret_domain;
+    // Look up the gTLD to issue
+    new_domain = test_domains[tld_index];
+
+    v->len = strlen(new_domain);
+    v->data = (u_char *)new_domain;
 
     v->valid = 1;
     v->not_found = 0;
     v->no_cacheable = 0;
-    
-    // ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-    //             "Converted experiment %s into domain %s", exp_str, new_domain);
-    free(exp_str);
-    free(ret_domain);
-    return NGX_OK;
-}
 
-int djb2_hash(char *str, int num_buckets) {
-	unsigned long hash = 5381;
-	int c;
-	while ((c = *str++)) {
-		hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-	}
-	return (int)(hash % num_buckets);
+    return NGX_OK;
 }
 
 int read_test_domains(char *domain_list, ngx_cycle_t *cycle) {
@@ -132,7 +93,6 @@ static ngx_str_t ngx_hashtld_variable_name = ngx_string("hashtld");
 
 static ngx_int_t ngx_hashtld_add_variables(ngx_conf_t *cf)
 {
-  my_cf = cf;
   ngx_http_variable_t* var = ngx_http_add_variable(
           cf,
           &ngx_hashtld_variable_name,
